@@ -211,6 +211,8 @@
         if (!model || currentModelKey !== "yura") return;
         var nx = (e.clientX / window.innerWidth)  * 2 - 1;
         var ny = (e.clientY / window.innerHeight) * 2 - 1;
+        // 유라: 캐릭터 기준 우측(nx > 0) 시선 차단 - 모델이 우측에 위치하므로
+        nx = Math.min(0, nx);
         try { model.focus(e.clientX, e.clientY); } catch(_) {}
         try {
           var fc = model.internalModel.focusController;
@@ -287,6 +289,10 @@
       posX = (sz.w - mW * sc) / 2;
       posY = (sz.h - chatH - 10) - (mH * sc);
       posY += 95;  // 기본 +80 + 15px 추가
+      // 토리 모바일: 모델 원점 보정 - 우측으로 이동
+      if (!isGreeter) {
+        posX += sz.w * 0.12;  // 컨테이너 너비의 12% 오른쪽으로
+      }
       // 접수원 하루 모바일: 44% 확대 + 60px
       if (isGreeter) {
         sc   *= 1.44;

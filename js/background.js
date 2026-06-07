@@ -717,7 +717,7 @@ function initBackgroundSystem() {
 
   // 캐릭터 변경 시 Live2D ↔ 일반 이미지 전환에 따라 배경 자동 처리
   // Live2D로 바꾸면 방송방, 일반 이미지로 바꾸면 방송방 모드 해제(기본 배경으로)
-  var LIVE2D_KEYS = ["haru", "greeter"];
+  var LIVE2D_KEYS = ["tori", "yura"];
   window.addEventListener("ghost:character-changed", function(e) {
     try {
       var key = e && e.detail && e.detail.key;
@@ -734,8 +734,8 @@ function initBackgroundSystem() {
   // 초기 배경 모드 결정
   // Live2D 캐릭터(haru / greeter) 선택 중이면 방송방, 아니면 랜덤
   (function(){
-    var LIVE2D_KEYS = ["haru", "greeter"];
-    var charKey = "haru"; // 기본값
+    var LIVE2D_KEYS = ["tori", "yura"];
+    var charKey = "tori"; // 기본값
     try {
       var saved = window.localStorage && window.localStorage.getItem("ghostCurrentCharacter");
       if (saved) charKey = saved;

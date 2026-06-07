@@ -53,7 +53,7 @@
 
       @media (max-width:768px) {
         body.broadcast-room-mode #scBtn { display:flex; }
-        #scCal { width:min(360px,96vw); padding:15px 11px 13px; }
+        #scCal { width:min(420px,98vw); padding:15px 13px 13px; }
       }
 
       /* 헤더 */
@@ -91,7 +91,7 @@
       .sc-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; position:relative; }
 
       .sc-cell {
-        min-height:72px; border-radius:12px;
+        aspect-ratio:1/1; min-height:0; border-radius:12px;
         background:rgba(180,225,255,0.18);
         backdrop-filter:none;
         border:none !important;
@@ -118,7 +118,7 @@
       }
       .sc-cell.sc-mt {
         background:transparent !important; box-shadow:none !important;
-        border:none !important; cursor:default; pointer-events:none; min-height:72px;
+        border:none !important; cursor:default; pointer-events:none;
       }
       .sc-cell.sc-om .sc-dn { opacity:.22; }
 
@@ -128,8 +128,8 @@
       .sc-cell.sc-sun .sc-dn { color:rgba(200,50,50,.85); }
       .sc-cell.sc-sat .sc-dn { color:rgba(50,80,200,.85); }
 
-      .sc-prev { font-size:8.5px; color:rgba(10,40,90,.92); line-height:1.32;
-        overflow:hidden; display:-webkit-box; -webkit-line-clamp:4;
+      .sc-prev { font-size:8px; color:rgba(10,40,90,.92); line-height:1.28;
+        overflow:hidden; display:-webkit-box; -webkit-line-clamp:3;
         -webkit-box-orient:vertical; word-break:break-all; white-space:pre-wrap; }
 
       /* 확장 패널 */
