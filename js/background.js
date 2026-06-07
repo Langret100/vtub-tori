@@ -584,6 +584,7 @@ function initBackgroundSystem() {
     const waveBackground = document.getElementById("waveBackground");
     const prevMode = currentBgMode;
     currentBgMode = mode;
+    try { window.localStorage && window.localStorage.setItem("ghostBgMode", mode); } catch(e) {}
     hideAllBackgrounds();
 
     // 방송방 모드 해제
@@ -732,23 +733,12 @@ function initBackgroundSystem() {
   });
 
   // 초기 배경 모드 결정
-  // Live2D 캐릭터(haru / greeter) 선택 중이면 방송방, 아니면 랜덤
+  // 기본 배경은 항상 방송방. 사용자가 직접 바꾼 경우 localStorage 값 복원
   (function(){
-    var LIVE2D_KEYS = ["tori", "yura"];
-    var charKey = "tori"; // 기본값
+    var saved = null;
     try {
-      var saved = window.localStorage && window.localStorage.getItem("ghostCurrentCharacter");
-      if (saved) charKey = saved;
+      saved = window.localStorage && window.localStorage.getItem("ghostBgMode");
     } catch(e) {}
-
-    var isLive2D = LIVE2D_KEYS.indexOf(charKey) !== -1;
-
-    if (isLive2D) {
-      setBackgroundMode("broadcasting_room");
-    } else {
-      var modes = ["default", "snow", "train"];
-      var idx = Math.floor(Math.random() * modes.length);
-      setBackgroundMode(modes[idx] || "default");
-    }
+    setBackgroundMode(saved || "broadcasting_room");
   })();
 }
