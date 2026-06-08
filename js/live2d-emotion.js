@@ -475,7 +475,7 @@
               // 접수원 하루(greeter): 게임 모드에서 20% 크게 + 15px 아래
               if (currentModelKey === "yura") sc2 *= 1.20;
               model.scale.set(sc2);
-              model.x = (gmW - mW2 * sc2) / 2;
+              model.x = (gmW - mW2 * sc2) / 2 + (currentModelKey !== "yura" ? gmW * 0.18 : 0);
               model.y = gmH * 0.05 + (currentModelKey === "yura" ? 15 : 0);
             }
           } else {
