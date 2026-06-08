@@ -103,7 +103,7 @@
         firebaseApp = firebase.initializeApp(SOCIAL_CHAT_FIREBASE_CONFIG);
       }
       firebaseDb = firebase.database();
-      firebaseRef = firebaseDb.ref("socialChat");
+      firebaseRef = firebaseDb.ref("messages/global");
       return firebaseDb;
     } catch (e) {
       console.error("[social-chat] Firebase 초기화 실패:", e);
@@ -333,12 +333,7 @@ async function loadRecentMessagesFromSheet(force) {
 
       handleIncomingMessage_(msg);
 
-      // Firebase 에는 기록이 남지 않도록 즉시 삭제
-      try {
-        snapshot.ref.remove();
-      } catch (e) {
-        console.warn("[social-chat] snapshot 제거 중 오류:", e);
-      }
+      // messages/global 공유 경로 - 소셜 메신저와 공유하므로 삭제하지 않음
     });
   }
 
@@ -371,6 +366,8 @@ async function loadRecentMessagesFromSheet(force) {
       user_id: getSafeUserId(),
       nickname: getSafeNickname(),
       text: trimmed,
+      type: "text",
+      room_id: "global",
       ts: now
     };
 
