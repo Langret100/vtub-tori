@@ -150,51 +150,36 @@
   
 
 async function loadRecentMessagesFromSheet(force) {
-  // "마이파-톡"(전체 대화방) 화면은 시트에서 최신글을 불러옵니다.
-  // force=true면 항상 다시 로드합니다.
-
+  // Firebase messages/global 에서 최근 메시지 로드 (시트 대신)
   if (!force) {
-    // 너무 잦은 호출 방지(짧은 디바운스)
     if (Date.now() - lastSheetLoadedAt < 250) return;
   }
   lastSheetLoadedAt = Date.now();
 
-  if (typeof postToSheet !== "function") {
-    console.warn("[social-chat] postToSheet 함수가 없어 최근 메시지를 불러올 수 없습니다.");
+  var db = ensureFirebase();
+  if (!db || !firebaseRef) {
+    console.warn("[social-chat] Firebase 미연결 - 초기 메시지 로드 불가");
     return;
   }
 
   try {
-    var res = await postToSheet({
-      mode: "social_recent_room",
-      room_id: "global",
-      limit: MAX_BUFFER
-    });
-    if (!res || !res.ok) {
-      console.warn("[social-chat] 최근 메시지 응답이 올바르지 않습니다.");
-      return;
-    }
-    var text = await res.text();
-    var json;
-    try { json = JSON.parse(text); } catch (e) { return; }
-    if (!json || !json.messages) return;
-
+    var snap = await firebaseRef.orderByChild("ts").limitToLast(MAX_BUFFER).once("value");
     socialMessages = [];
     seenKeys = {};
-    (json.messages || []).forEach(function (row) {
-      if (!row) return;
-      var rawMsg = (row.text || row.chatlog || row.message || row.msg || "").toString();
+    snap.forEach(function(child) {
+      var val = child.val() || {};
+      if (!val.text) return;
+      var key = child.key;
+      seenKeys[key] = true;
       socialMessages.push({
-        user_id: row.user_id || "",
-        nickname: row.nickname || "익명",
-        text: rawMsg,
-        ts: row.ts || row.timestamp || row.date || 0
+        key: key,
+        mid: val.mid || key,
+        user_id: val.user_id || "",
+        nickname: val.nickname || "익명",
+        text: val.text || "",
+        ts: val.ts || 0
       });
     });
-
-    if (socialMessages.length > MAX_BUFFER) {
-      socialMessages = socialMessages.slice(socialMessages.length - MAX_BUFFER);
-    }
 
     if (socialChatMode) {
       renderSocialMessages();
