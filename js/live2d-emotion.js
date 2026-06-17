@@ -224,7 +224,7 @@
       function applyGyro(e) {
         if (e.gamma === null && e.beta === null) return;
         var nx = Math.max(-1, Math.min(1, (e.gamma || 0) / 30));
-        var ny = Math.max(-1, Math.min(1, ((e.beta  || 0) - 15) / 20));
+        var ny = Math.max(-1, Math.min(1, ((e.beta  || 0) - 15) / 20)) * 0.2; // 위아래 움직임 20%로 축소
         try {
           model.internalModel.focusController.focus(nx, ny);  // 모바일: Y 반전 없음
         } catch (_) {}
@@ -297,7 +297,7 @@
       if (isGreeter) {
         sc   *= 1.44;
         posX  = (sz.w - mW * sc) / 2;
-        posY += 60;
+        posY += 0;   // 60 → 0: 유라 모바일 위치를 위로 올림 (토리와 동일 기준으로)
       }
     } else {
       sc   = (sz.h * 1.15) / mH;
