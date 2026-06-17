@@ -147,12 +147,15 @@
       return;
     }
     var panelW = _panel.getBoundingClientRect().width;
+    var frameW = MO_CONTENT_W + MO_OVERHANG; // 스크롤바 숨김용 오버행 포함 실제 iframe 폭
     if (panelW >= MO_CONTENT_W - 0.5) {
+      // 화면이 충분히 넓음: 스케일 없이, 오버행만큼 패널 밖으로 자연스럽게 넘침(클립됨)
       _frame.style.transform = "none";
-      _frame.style.width = MO_CONTENT_W + "px";
+      _frame.style.width = frameW + "px";
     } else {
+      // 화면이 좁음: 콘텐츠 기준(MO_CONTENT_W)으로 비율 계산해 축소
       var scale = panelW / MO_CONTENT_W;
-      _frame.style.width = MO_CONTENT_W + "px";
+      _frame.style.width = frameW + "px";
       _frame.style.transform = "scale(" + scale + ")";
       _frame.style.transformOrigin = "top left";
     }
