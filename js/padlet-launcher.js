@@ -11,7 +11,7 @@
   var CLIP       = 0;
   var BAR_H      = 44;
   var CONTENT_W  = 390;
-  var OVERHANG   = 16;
+  var OVERHANG   = 10;
 
   function addStyle() {
     if (document.getElementById("pl-s")) return;
@@ -64,11 +64,11 @@
 
       /* 모바일: 동적 viewport 높이 대응 — 100dvh 우선, 미지원 브라우저는 100% */
       "@media(max-width:640px){" +
-      "#pl-panel{width:" + (CONTENT_W - OVERHANG) + "px;height:100%;min-height:0;max-height:none;border-radius:0;}" +
+      "#pl-panel{width:" + (CONTENT_W - OVERHANG) + "px;height:92%;min-height:0;max-height:none;border-radius:14px;}" +
       "}" +
       "@supports (height:100dvh){" +
       "@media(max-width:640px){" +
-      "#pl-panel{height:100dvh;}" +
+      "#pl-panel{height:92dvh;}" +
       "}" +
       "}";
     document.head.appendChild(el);
