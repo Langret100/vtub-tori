@@ -35,13 +35,13 @@
 
       /* 클립 래퍼 */
       "#pl-clip{position:absolute;" +
-      "top:" + BAR_H + "px;left:0;right:-32px;bottom:0;" +
+      "top:" + BAR_H + "px;left:0;right:-16px;bottom:0;" +
       "overflow:hidden;}" +
 
       /* iframe: 패널 폭에 꽉 채움, 스크롤바 없음 */
       "#pl-frame{position:absolute;" +
       "top:-" + CLIP + "px;left:0;" +
-      "width:calc(100% + 32px);height:calc(100% + " + CLIP + "px);" +
+      "width:calc(100% + 16px);height:calc(100% + " + CLIP + "px);" +
       "border:none;display:block;" +
       "overflow:hidden;}" +
 
@@ -64,6 +64,8 @@
       "@media(max-width:640px){" +
       "#pl-dim{align-items:stretch;justify-content:stretch;}" +
       "#pl-panel{width:100%;height:100%;min-height:0;max-height:none;border-radius:0;}" +
+      "#pl-clip{right:0!important;}" +
+      "#pl-frame{width:100%!important;}" +
       "}";
     document.head.appendChild(el);
   }
