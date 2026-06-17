@@ -70,7 +70,7 @@
 
       /* 모바일: 패널을 화면 전체로 — 폭은 CONTENT_W-OVERHANG 비율 유지하며 꽉 채움 */
       "@media(max-width:640px){" +
-      "#pl-panel{width:100vw;height:100%;min-height:0;max-height:none;border-radius:0;}" +
+      "#pl-panel{height:100%;min-height:0;max-height:none;border-radius:0;}" +
       "}";
     document.head.appendChild(el);
   }
