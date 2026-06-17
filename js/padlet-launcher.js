@@ -1,9 +1,7 @@
-// padlet-launcher.js v15
-// 설계 원칙:
-//  - CONTENT_W : 패들렛이 렌더링에 사용하는 실제 컨테이너 폭 (모바일 레이아웃 트리거용)
-//  - OVERHANG  : 그 중 스크롤바를 가리기 위해 보이는 영역 밖으로 빼는 폭
-//  - 보이는 폭 = CONTENT_W - OVERHANG (이 값이 패널의 실제 표시 폭)
-//  - PC / 모바일 동일한 비율로 동작 (모바일은 화면이 좁으면 비율 유지하며 축소)
+// padlet-launcher.js v17
+// - 모바일 동적 viewport(주소창 변화) 대응: 100% 대신 100dvh
+// - transform:scale 방식 제거 (클릭 좌표 어긋남 방지) — 좁은 화면은 좌측 정렬 + 약간 잘림 허용
+// - 클릭 정확도를 잘림보다 우선
 
 (function () {
   if (window.PadletLauncher) return;
@@ -12,8 +10,8 @@
   var BTID       = "padletBtn";
   var CLIP       = 0;
   var BAR_H      = 44;
-  var CONTENT_W  = 390;  // 패들렛에게 보여줄 컨테이너 폭
-  var OVERHANG   = 16;   // 스크롤바 숨김용 — 이 폭만큼 화면 밖으로
+  var CONTENT_W  = 390;
+  var OVERHANG   = 16;
 
   function addStyle() {
     if (document.getElementById("pl-s")) return;
@@ -34,25 +32,21 @@
       "overflow:hidden;}" +
       "#pl-dim.open{display:flex;}" +
 
-      /* 패널: 보이는 폭 = CONTENT_W - OVERHANG (실제 화면에 차지하는 박스) */
       "#pl-panel{position:relative;" +
       "width:min(" + (CONTENT_W - OVERHANG) + "px,94vw);height:88vh;" +
       "max-height:960px;min-height:400px;" +
       "border-radius:14px;overflow:hidden;" +
       "box-shadow:0 8px 48px rgba(0,0,0,.55);}" +
 
-      /* 클립 래퍼: 패널과 동일 크기, overflow:hidden으로 iframe 잘라냄 */
       "#pl-clip{position:absolute;" +
       "top:" + BAR_H + "px;left:0;right:0;bottom:0;" +
       "overflow:hidden;}" +
 
-      /* iframe: CONTENT_W 고정폭(스케일 없이), 패널 폭에 맞춰 클립만 됨 */
       "#pl-frame{position:absolute;" +
       "top:-" + CLIP + "px;left:0;" +
       "width:" + CONTENT_W + "px;height:calc(100% + " + CLIP + "px);" +
       "border:none;display:block;}" +
 
-      /* 버튼 바 */
       "#pl-bar{position:absolute;top:0;left:0;right:0;" +
       "height:" + BAR_H + "px;z-index:10;" +
       "display:none;align-items:center;justify-content:space-between;" +
@@ -68,9 +62,14 @@
       ".pl-btn:hover{background:rgba(255,255,255,.22);}" +
       ".pl-btn:active{transform:scale(.9);}" +
 
-      /* 모바일: 패널을 화면 전체로 — 폭은 CONTENT_W-OVERHANG 비율 유지하며 꽉 채움 */
+      /* 모바일: 동적 viewport 높이 대응 — 100dvh 우선, 미지원 브라우저는 100% */
       "@media(max-width:640px){" +
-      "#pl-panel{height:100%;min-height:0;max-height:none;border-radius:0;}" +
+      "#pl-panel{width:" + (CONTENT_W - OVERHANG) + "px;height:100%;min-height:0;max-height:none;border-radius:0;}" +
+      "}" +
+      "@supports (height:100dvh){" +
+      "@media(max-width:640px){" +
+      "#pl-panel{height:100dvh;}" +
+      "}" +
       "}";
     document.head.appendChild(el);
   }
