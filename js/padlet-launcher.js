@@ -35,13 +35,13 @@
 
       /* 클립 래퍼 */
       "#pl-clip{position:absolute;" +
-      "top:" + BAR_H + "px;left:0;right:0;bottom:0;" +
+      "top:" + BAR_H + "px;left:0;right:-20px;bottom:0;" +
       "overflow:hidden;}" +
 
       /* iframe: 패널 폭에 꽉 채움, 스크롤바 없음 */
       "#pl-frame{position:absolute;" +
       "top:-" + CLIP + "px;left:0;" +
-      "width:100%;height:calc(100% + " + CLIP + "px);" +
+      "width:calc(100% - 20px);height:calc(100% + " + CLIP + "px);" +
       "border:none;display:block;" +
       "overflow:hidden;}" +
 
