@@ -147,6 +147,11 @@
       return;
     }
     var panelW = _panel.getBoundingClientRect().width;
+    if (!panelW || panelW < 50) {
+      // 레이아웃이 아직 반영 안 된 비정상 값 — 다음 프레임에 재시도
+      requestAnimationFrame(syncMobileScale);
+      return;
+    }
     var frameW = MO_CONTENT_W + MO_OVERHANG; // 스크롤바 숨김용 오버행 포함 실제 iframe 폭
     if (panelW >= MO_CONTENT_W - 0.5) {
       // 화면이 충분히 넓음: 스케일 없이, 오버행만큼 패널 밖으로 자연스럽게 넘침(클립됨)
@@ -166,7 +171,11 @@
     _frame.src = URL;
     _dim.classList.add("open");
     _bar.classList.add("open");
-    requestAnimationFrame(syncMobileScale);
+    // display:none → flex 전환 직후 한 프레임만으로는 레이아웃이 아직
+    // 반영되지 않아 panelW가 부정확할 수 있어 두 프레임 뒤에 측정
+    requestAnimationFrame(function(){
+      requestAnimationFrame(syncMobileScale);
+    });
   }
 
   function close() {
