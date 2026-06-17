@@ -70,10 +70,9 @@
 
       /* ===== 모바일 전용 — PC 값과 완전히 무관한 별도 수치 ===== */
       "@media(max-width:640px){" +
-      "#pl-panel{width:" + (MO_CONTENT_W - MO_OVERHANG) + "px;" +
+      "#pl-panel{width:min(" + (MO_CONTENT_W - MO_OVERHANG) + "px,96vw);" +
       "height:" + MO_HEIGHT_PCT + "%;" +
       "min-height:0;max-height:none;border-radius:14px;}" +
-      "#pl-frame{width:" + MO_CONTENT_W + "px;}" +
       "}" +
       "@supports (height:100dvh){" +
       "@media(max-width:640px){" +
@@ -141,11 +140,31 @@
     catch(e) { _frame.src = URL; }
   }
 
+  function syncMobileScale() {
+    if (window.innerWidth > 640) {
+      _frame.style.transform = "none";
+      _frame.style.width = PC_CONTENT_W + "px";
+      return;
+    }
+    var panelW = _panel.getBoundingClientRect().width;
+    var fullW  = MO_CONTENT_W - MO_OVERHANG;
+    if (panelW >= fullW - 0.5) {
+      _frame.style.transform = "none";
+      _frame.style.width = MO_CONTENT_W + "px";
+    } else {
+      var scale = panelW / fullW;
+      _frame.style.width = MO_CONTENT_W + "px";
+      _frame.style.transform = "scale(" + scale + ")";
+      _frame.style.transformOrigin = "top left";
+    }
+  }
+
   function open() {
     buildDOM();
     _frame.src = URL;
     _dim.classList.add("open");
     _bar.classList.add("open");
+    requestAnimationFrame(syncMobileScale);
   }
 
   function close() {
@@ -156,6 +175,10 @@
 
   document.addEventListener("keydown", function(e){
     if (e.key === "Escape") close();
+  });
+
+  window.addEventListener("resize", function(){
+    if (_dim && _dim.classList.contains("open")) syncMobileScale();
   });
 
   function init() {
