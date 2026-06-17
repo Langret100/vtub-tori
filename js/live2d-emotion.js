@@ -223,7 +223,7 @@
       /* 모바일: deviceorientation → focus */
       function applyGyro(e) {
         if (e.gamma === null && e.beta === null) return;
-        var nx = Math.max(-1, Math.min(1, (e.gamma || 0) / 30));
+        var nx = Math.max(-1, Math.min(1, (e.gamma || 0) / 30)) * 0.5; // 좌우 움직임 50%로 축소
         var ny = Math.max(-1, Math.min(1, ((e.beta  || 0) - 15) / 20)) * 0.2; // 위아래 움직임 20%로 복원
         try {
           model.internalModel.focusController.focus(nx, ny);  // 모바일: Y 반전 없음

@@ -476,6 +476,9 @@ let currentCharacterKey = (function () {
 })(); // 현재 선택된 캐릭터 키
 
 let currentCharacterName = CHARACTERS[currentCharacterKey].name;
+try {
+  document.body.classList.toggle("model-yura", currentCharacterKey === "yura");
+} catch (_e3) {}
 
 // 캐릭터 변경 헬퍼
 function setCurrentCharacter(key) {
@@ -483,6 +486,9 @@ function setCurrentCharacter(key) {
   if (!ch) return;
   currentCharacterKey = key;
   currentCharacterName = ch.name;
+  try {
+    document.body.classList.toggle("model-yura", key === "yura");
+  } catch (_e2) {}
   try {
     if (window.localStorage) {
       window.localStorage.setItem(CHARACTER_STORAGE_KEY, key);
