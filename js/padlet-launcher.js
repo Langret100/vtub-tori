@@ -10,8 +10,8 @@
   var BTID       = "padletBtn";
   var CLIP       = 0;
   var BAR_H      = 44;
-  var CONTENT_W  = 390;
-  var OVERHANG   = 10;
+  var CONTENT_W  = 410;
+  var OVERHANG   = 16;
 
   function addStyle() {
     if (document.getElementById("pl-s")) return;
