@@ -70,7 +70,7 @@
 
       /* ===== 모바일 전용 — PC 값과 완전히 무관한 별도 수치 ===== */
       "@media(max-width:640px){" +
-      "#pl-panel{width:min(" + (MO_CONTENT_W - MO_OVERHANG) + "px,96vw);" +
+      "#pl-panel{width:min(" + MO_CONTENT_W + "px,96vw);" +
       "height:" + MO_HEIGHT_PCT + "%;" +
       "min-height:0;max-height:none;border-radius:14px;}" +
       "}" +
@@ -147,12 +147,11 @@
       return;
     }
     var panelW = _panel.getBoundingClientRect().width;
-    var fullW  = MO_CONTENT_W - MO_OVERHANG;
-    if (panelW >= fullW - 0.5) {
+    if (panelW >= MO_CONTENT_W - 0.5) {
       _frame.style.transform = "none";
       _frame.style.width = MO_CONTENT_W + "px";
     } else {
-      var scale = panelW / fullW;
+      var scale = panelW / MO_CONTENT_W;
       _frame.style.width = MO_CONTENT_W + "px";
       _frame.style.transform = "scale(" + scale + ")";
       _frame.style.transformOrigin = "top left";
