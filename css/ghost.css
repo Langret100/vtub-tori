@@ -527,6 +527,10 @@ body.is-game-mode #ghostContainer {
         right: 69vw;
         bottom: 55%;
       }
+      body.model-yura #bubbleWrapper {
+        right: 74vw;
+        bottom: 60%;
+      }
       #chatDock {
         width: 98vw;
         bottom: 18px;

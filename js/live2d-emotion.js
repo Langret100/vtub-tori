@@ -224,7 +224,7 @@
       function applyGyro(e) {
         if (e.gamma === null && e.beta === null) return;
         var nx = Math.max(-1, Math.min(1, (e.gamma || 0) / 30));
-        var ny = Math.max(-1, Math.min(1, ((e.beta  || 0) - 15) / 20)) * 0.08; // 위아래 움직임 추가 축소 (20%→8%)
+        var ny = Math.max(-1, Math.min(1, ((e.beta  || 0) - 15) / 20)) * 0.2; // 위아래 움직임 20%로 복원
         try {
           model.internalModel.focusController.focus(nx, ny);  // 모바일: Y 반전 없음
         } catch (_) {}
@@ -644,6 +644,7 @@
     currentExpr         = null;
     _currentEmotionName = null;
     currentModelKey     = modelKey;
+    document.body.classList.toggle("model-yura", modelKey === "yura");
 
     // 새 모델만 로드해서 기존 스테이지에 추가
     if (!buildBlobs(currentModelKey)) return;
@@ -759,6 +760,7 @@
       var saved = window.localStorage && window.localStorage.getItem("ghostCurrentCharacter");
       if (saved === "yura") {
         currentModelKey = "yura";
+        document.body.classList.add("model-yura");
         console.log("[Live2D] 저장된 캐릭터 복원: yura");
       }
     } catch(e) {}
