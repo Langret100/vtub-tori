@@ -143,6 +143,7 @@
     if (window.innerWidth > 640) {
       _frame.style.transform = "none";
       _frame.style.width = PC_CONTENT_W + "px";
+      _frame.style.left = "0";
       return;
     }
     var panelW = _panel.getBoundingClientRect().width;
@@ -159,12 +160,18 @@
       // 화면이 충분히 넓음: 스케일 없이, 오버행만큼 패널 밖으로 자연스럽게 넘침(클립됨)
       _frame.style.transform = "none";
       _frame.style.width = frameW + "px";
+      _frame.style.left = "0";
     } else {
       // 화면이 좁음: 여유를 둔 기준(safeContentW)으로 비율 계산해 축소
       var scale = panelW / safeContentW;
       _frame.style.width = frameW + "px";
       _frame.style.transform = "scale(" + scale + ")";
       _frame.style.transformOrigin = "top left";
+      // scale로 줄어든 후 실제 보이는 폭(frameW*scale)이 panelW보다 작으면
+      // 그 차이의 절반만큼 좌측으로 밀어서 좌우 중앙 정렬
+      var shownW = frameW * scale;
+      var offsetX = (panelW - shownW) / 2;
+      _frame.style.left = offsetX + "px";
     }
   }
 
