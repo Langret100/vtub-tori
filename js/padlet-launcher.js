@@ -23,7 +23,7 @@
     var el = document.createElement("style");
     el.id = "pl-s";
     el.textContent =
-      "#padletBtn{position:absolute;top:102px;right:14px;width:42px;height:42px;" +
+      "#padletBtn{position:absolute;top:62px;right:14px;width:42px;height:42px;" +
       "background:none!important;border:none!important;outline:none;" +
       "box-shadow:none!important;backdrop-filter:none!important;" +
       "cursor:pointer;z-index:15;padding:0;" +

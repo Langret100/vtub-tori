@@ -12,7 +12,7 @@
     s.id = "sc-style";
     s.textContent = `
       #scBtn {
-        position:absolute; top:52px; right:14px;
+        position:absolute; top:14px; right:14px;
         width:42px; height:42px;
         background:none !important;
         border:none !important; outline:none;
