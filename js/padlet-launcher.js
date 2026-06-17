@@ -5,7 +5,7 @@
 
   var URL   = "https://zrr.kr/svrHqA";
   var BTID  = "padletBtn";
-  var CLIP  = 56;
+  var CLIP  = 0;
   var BAR_H = 44;
 
   function addStyle() {
