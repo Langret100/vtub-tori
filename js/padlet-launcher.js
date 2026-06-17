@@ -1,12 +1,13 @@
-// padlet-launcher.js v12
+// padlet-launcher.js v13
 
 (function () {
   if (window.PadletLauncher) return;
 
-  var URL   = "https://zrr.kr/svrHqA";
-  var BTID  = "padletBtn";
-  var CLIP  = 0;
-  var BAR_H = 44;
+  var URL    = "https://zrr.kr/svrHqA";
+  var BTID   = "padletBtn";
+  var CLIP   = 0;
+  var BAR_H  = 44;
+  var OVERHANG = 22; // 스크롤바를 패널 밖으로 밀어내는 폭(PC만 적용)
 
   function addStyle() {
     if (document.getElementById("pl-s")) return;
@@ -26,22 +27,33 @@
       "background:rgba(0,0,0,.6);align-items:center;justify-content:center;}" +
       "#pl-dim.open{display:flex;}" +
 
-      /* 패널: 모바일 폭 390px 고정 → 패들렛이 모바일로 렌더링 */
+      /* 패널: 모바일 폭 390px 고정, 배경 흰색(로딩 중 투명 화면 방지) */
       "#pl-panel{position:relative;" +
       "width:min(390px,96vw);height:88vh;" +
       "max-height:960px;min-height:400px;" +
       "border-radius:14px;overflow:hidden;" +
+      "background:#fff;" +
       "box-shadow:0 8px 48px rgba(0,0,0,.55);}" +
+
+      /* 로딩 스피너 */
+      "#pl-loading{position:absolute;inset:0;z-index:5;" +
+      "display:flex;align-items:center;justify-content:center;" +
+      "background:#fff;transition:opacity .25s;}" +
+      "#pl-loading.hide{opacity:0;pointer-events:none;}" +
+      "#pl-spinner{width:34px;height:34px;border-radius:50%;" +
+      "border:3px solid rgba(0,0,0,.12);border-top-color:rgba(80,80,90,.65);" +
+      "animation:pl-spin .8s linear infinite;}" +
+      "@keyframes pl-spin{to{transform:rotate(360deg);}}" +
 
       /* 클립 래퍼 */
       "#pl-clip{position:absolute;" +
-      "top:" + BAR_H + "px;left:0;right:-16px;bottom:0;" +
+      "top:" + BAR_H + "px;left:0;right:-" + OVERHANG + "px;bottom:0;" +
       "overflow:hidden;}" +
 
-      /* iframe: 패널 폭에 꽉 채움, 스크롤바 없음 */
+      /* iframe */
       "#pl-frame{position:absolute;" +
       "top:-" + CLIP + "px;left:0;" +
-      "width:calc(100% + 16px);height:calc(100% + " + CLIP + "px);" +
+      "width:calc(100% + " + OVERHANG + "px);height:calc(100% + " + CLIP + "px);" +
       "border:none;display:block;" +
       "overflow:hidden;}" +
 
@@ -61,16 +73,15 @@
       ".pl-btn:hover{background:rgba(255,255,255,.22);}" +
       ".pl-btn:active{transform:scale(.9);}" +
 
+      /* 모바일: 패널이 화면보다 22px 넓어지지만 dim overflow:hidden 으로 잘림 */
       "@media(max-width:640px){" +
-      "#pl-dim{align-items:stretch;justify-content:stretch;}" +
-      "#pl-panel{width:100%;height:100%;min-height:0;max-height:none;border-radius:0;}" +
-      "#pl-clip{right:0!important;}" +
-      "#pl-frame{width:100%!important;}" +
+      "#pl-dim{align-items:stretch;justify-content:stretch;overflow:hidden;}" +
+      "#pl-panel{width:100%;height:100%;min-height:0;max-height:none;border-radius:0;overflow:hidden;}" +
       "}";
     document.head.appendChild(el);
   }
 
-  var _dim, _panel, _clip, _frame, _bar;
+  var _dim, _panel, _clip, _frame, _bar, _loading;
 
   function buildDOM() {
     if (document.getElementById("pl-dim")) return;
@@ -92,6 +103,16 @@
     _frame.setAttribute("allowfullscreen", "");
     _frame.setAttribute("sandbox",
       "allow-scripts allow-forms allow-same-origin allow-popups allow-modals");
+    _frame.addEventListener("load", function () {
+      if (_loading) _loading.classList.add("hide");
+    });
+
+    /* 로딩 오버레이 */
+    _loading = document.createElement("div");
+    _loading.id = "pl-loading";
+    var spinner = document.createElement("div");
+    spinner.id = "pl-spinner";
+    _loading.appendChild(spinner);
 
     _bar = document.createElement("div");
     _bar.id = "pl-bar";
@@ -118,6 +139,7 @@
     _bar.appendChild(xBtn);
     _clip.appendChild(_frame);
     _panel.appendChild(_clip);
+    _panel.appendChild(_loading);
     _panel.appendChild(_bar);
     _dim.appendChild(_panel);
     document.body.appendChild(_dim);
@@ -130,6 +152,7 @@
 
   function open() {
     buildDOM();
+    if (_loading) _loading.classList.remove("hide");
     _frame.src = URL;
     _dim.classList.add("open");
     _bar.classList.add("open");
