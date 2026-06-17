@@ -101,7 +101,6 @@
     _frame = document.createElement("iframe");
     _frame.id = "pl-frame";
     _frame.allow = "camera;microphone;clipboard-read;clipboard-write;fullscreen;encrypted-media";
-    _frame.setAttribute("allowfullscreen", "");
     _frame.setAttribute("sandbox",
       "allow-scripts allow-forms allow-same-origin allow-popups allow-modals");
 
@@ -153,13 +152,16 @@
       return;
     }
     var frameW = MO_CONTENT_W + MO_OVERHANG; // 스크롤바 숨김용 오버행 포함 실제 iframe 폭
-    if (panelW >= MO_CONTENT_W - 0.5) {
+    // 경계값 근처(예: 388~392px) 라운딩 오차로 오버행이 충분히 가려지지 않는 걸 방지하기 위해
+    // 콘텐츠 기준 폭에 미세 여유(2%)를 둬서 항상 패널 안에 확실히 들어가게 스케일
+    var safeContentW = MO_CONTENT_W * 1.02;
+    if (panelW >= safeContentW - 0.5) {
       // 화면이 충분히 넓음: 스케일 없이, 오버행만큼 패널 밖으로 자연스럽게 넘침(클립됨)
       _frame.style.transform = "none";
       _frame.style.width = frameW + "px";
     } else {
-      // 화면이 좁음: 콘텐츠 기준(MO_CONTENT_W)으로 비율 계산해 축소
-      var scale = panelW / MO_CONTENT_W;
+      // 화면이 좁음: 여유를 둔 기준(safeContentW)으로 비율 계산해 축소
+      var scale = panelW / safeContentW;
       _frame.style.width = frameW + "px";
       _frame.style.transform = "scale(" + scale + ")";
       _frame.style.transformOrigin = "top left";
