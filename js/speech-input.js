@@ -46,6 +46,22 @@
     var finalText = "";
     var interimText = "";
     var pausedAlwaysListen = false;
+    var inputWasReadOnly = false;
+    var previousInputMode = null;
+
+    function lockVirtualKeyboard() {
+      inputWasReadOnly = !!input.readOnly;
+      previousInputMode = input.getAttribute("inputmode");
+      try { input.blur(); } catch (e) {}
+      input.readOnly = true;
+      input.setAttribute("inputmode", "none");
+    }
+
+    function unlockVirtualKeyboard() {
+      input.readOnly = inputWasReadOnly;
+      if (previousInputMode == null) input.removeAttribute("inputmode");
+      else input.setAttribute("inputmode", previousInputMode);
+    }
 
     function mergeText() {
       var spoken = (finalText + (interimText ? (finalText ? " " : "") + interimText : "")).trim();
@@ -67,7 +83,8 @@
           console.warn("Voice submit failed:", e);
         }
       }
-      try { input.focus(); } catch (e2) {}
+      // 음성 전송 직후 입력창에 다시 포커스를 주면 모바일 키보드가 올라오므로 복원만 한다.
+      unlockVirtualKeyboard();
     }
 
     function startRecognition() {
@@ -76,6 +93,7 @@
       suppressClickUntil = Date.now() + 900;
 
       if (!SpeechRecognition) {
+        unlockVirtualKeyboard();
         show("이 브라우저에서는 음성 인식을 지원하지 않아요.");
         return;
       }
@@ -94,6 +112,7 @@
       } catch (e) {
         resumeAlwaysListen(pausedAlwaysListen);
         pausedAlwaysListen = false;
+        unlockVirtualKeyboard();
         show("음성 인식을 시작할 수 없어요.");
         return;
       }
@@ -138,6 +157,7 @@
         button.classList.remove("voice-listening");
         resumeAlwaysListen(pausedAlwaysListen);
         pausedAlwaysListen = false;
+        unlockVirtualKeyboard();
         show("음성 인식을 시작하지 못했어요. HTTPS와 마이크 권한을 확인해 주세요.");
       }
     }
@@ -146,6 +166,8 @@
       if (event && event.button != null && event.button !== 0) return;
       if (pointerHeld) return;
       pointerHeld = true;
+      // 누르는 동안 다른 전역 핸들러가 입력창을 포커스해도 가상 키보드가 열리지 않게 한다.
+      lockVirtualKeyboard();
       longPressTriggered = false;
       clearTimeout(holdTimer);
       holdTimer = setTimeout(startRecognition, HOLD_MS);
@@ -158,6 +180,9 @@
       clearTimeout(holdTimer);
       if (listening && recognition) {
         try { recognition.stop(); } catch (e) {}
+      } else {
+        // 짧게 눌러 일반 전송한 경우에는 즉시 원래 입력 상태로 되돌린다.
+        unlockVirtualKeyboard();
       }
     }
 
