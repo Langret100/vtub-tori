@@ -125,15 +125,39 @@
     return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  function getWakeNames(){
-    const names = [];
+  // 현재 선택된 캐릭터에 해당하는 호출어와 음성 오인식 후보만 사용한다.
+  // core.js 자체는 수정하지 않고 공개 브리지/전역값을 통해 이름을 읽는다.
+  const WAKE_NAME_ALIASES = {
+    '토리': ['토리', '토리야', '코리', '코리야', '코리아'],
+    '하루': ['하루', '하루야', '하루아', '하로', '하루우'],
+    '접수원 하루': ['접수원 하루', '접수원', '하루', '하루야', '하루아', '하로'],
+    '유라': ['유라', '유라야', '유라아', '유라라', '유나', '율아']
+  };
+
+  function getCurrentCharacterNameSafe(){
     try {
-      const current = String(window.currentCharacterName || '').trim();
-      if (current) names.push(current);
-      if (current === '하루') names.push('하루야','하루아');
-      if (current === '접수원 하루') names.push('접수원','하루');
+      if (window.GhostCoreBridge && typeof window.GhostCoreBridge.getCurrentCharacterName === 'function') {
+        const bridged = String(window.GhostCoreBridge.getCurrentCharacterName() || '').trim();
+        if (bridged) return bridged;
+      }
     } catch(e){}
-    names.push('하루','하루야','얘','야','저기','있잖아','잠깐');
+    try {
+      return String(window.currentCharacterName || '').trim();
+    } catch(e){}
+    return '';
+  }
+
+  function getWakeNames(){
+    const current = getCurrentCharacterNameSafe();
+    const names = [];
+    if (current) {
+      names.push(current);
+      const aliases = WAKE_NAME_ALIASES[current];
+      if (Array.isArray(aliases)) names.push.apply(names, aliases);
+    }
+    // 현재 이름을 읽을 수 없는 구형 화면에서는 토리 계열의 정식 이름만 허용한다.
+    if (!names.length) names.push('토리', '하루', '유라');
+    names.push('얘','야','저기','있잖아','잠깐');
     return Array.from(new Set(names.filter(Boolean))).sort(function(a,b){ return b.length - a.length; });
   }
 
