@@ -11,9 +11,14 @@
     status = document.createElement("div");
     status.id = "msgVoiceInputStatus";
     status.setAttribute("aria-live", "polite");
-    status.style.cssText = "display:none;font-size:12px;line-height:1.2;margin:0 0 4px 6px;opacity:.78;pointer-events:none;";
-    var host = input && input.parentElement ? input.parentElement : document.body;
-    try { host.insertBefore(status, input); } catch (e) { host.appendChild(status); }
+    status.style.cssText = "display:none;position:absolute;left:8px;bottom:calc(100% + 4px);z-index:20;width:max-content;max-width:calc(100% - 16px);white-space:nowrap;writing-mode:horizontal-tb;font-size:12px;line-height:1.3;opacity:.82;pointer-events:none;";
+    var wrap = input && input.closest ? input.closest(".msg-input-wrap") : null;
+    var host = (wrap && wrap.parentElement) || (input && input.parentElement) || document.body;
+    try {
+      var pos = window.getComputedStyle(host).position;
+      if (!pos || pos === "static") host.style.position = "relative";
+    } catch (e) { host.style.position = "relative"; }
+    host.appendChild(status);
     return status;
   }
 
@@ -73,14 +78,6 @@
       }, delay == null ? 1200 : delay);
     }
 
-    function updateInput() {
-      var spoken = (finalText + (interimText ? (finalText ? " " : "") + interimText : "")).trim();
-      input.value = ((baseText ? baseText + " " : "") + spoken).trim();
-      try {
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.scrollLeft = input.scrollWidth;
-      } catch (e) {}
-    }
 
     function finalizeAndSend() {
       if (finalized) return;
@@ -89,8 +86,12 @@
       recognition = null;
       button.classList.remove("voice-listening");
       setVoiceStatus("");
-      var text = String(input.value || "").trim();
+      var spokenText = (finalText + (interimText ? (finalText ? " " : "") + interimText : "")).trim();
+      var text = ((baseText ? baseText + " " : "") + spokenText).trim();
       if (text && longPressTriggered) {
+        // 전송 직전에만 값을 넣고 바로 전송한다. 인식 중에는 입력창을 건드리지 않는다.
+        input.value = text;
+        try { input.dispatchEvent(new Event("input", { bubbles: true })); } catch (e0) {}
         button.__voiceProgrammaticSend = true;
         try { button.click(); } catch (e) {}
         setTimeout(function () {
@@ -145,7 +146,7 @@
           if (result.isFinal) finalText += (finalText ? " " : "") + text;
           else interimText += (interimText ? " " : "") + text;
         }
-        updateInput();
+        // 인식 중에는 기존 채팅 입력창을 변경하지 않는다.
       };
       recognition.onerror = function (event) {
         var code = event && event.error ? event.error : "";
