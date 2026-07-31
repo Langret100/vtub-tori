@@ -5,13 +5,16 @@
   var HOLD_MS = 420;
   var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  function toast(text) {
-    var el = document.getElementById("msgStatus");
-    if (!el) return;
-    el.textContent = text || "";
-    el.classList.add("show");
-    clearTimeout(el.__voiceToastTimer);
-    el.__voiceToastTimer = setTimeout(function () { el.classList.remove("show"); }, 1600);
+  function ensureVoiceStatus(input) {
+    var status = document.getElementById("msgVoiceInputStatus");
+    if (status) return status;
+    status = document.createElement("div");
+    status.id = "msgVoiceInputStatus";
+    status.setAttribute("aria-live", "polite");
+    status.style.cssText = "display:none;font-size:12px;line-height:1.2;margin:0 0 4px 6px;opacity:.78;pointer-events:none;";
+    var host = input && input.parentElement ? input.parentElement : document.body;
+    try { host.insertBefore(status, input); } catch (e) { host.appendChild(status); }
+    return status;
   }
 
   function setup() {
@@ -33,6 +36,19 @@
     var oldReadOnly = false;
     var oldInputMode = null;
     var voiceInputLocked = false;
+    var finalized = false;
+    var voiceStatus = ensureVoiceStatus(input);
+
+    function setVoiceStatus(message) {
+      voiceStatus.textContent = message || "";
+      voiceStatus.style.display = message ? "block" : "none";
+    }
+
+    function showStatus(message) {
+      setVoiceStatus(message);
+      clearTimeout(voiceStatus.__hideTimer);
+      if (message) voiceStatus.__hideTimer = setTimeout(function () { setVoiceStatus(""); }, 2200);
+    }
 
     function lockInputForVoice() {
       clearTimeout(inputLockTimer);
@@ -54,11 +70,10 @@
         if (oldInputMode == null) input.removeAttribute("inputmode");
         else input.setAttribute("inputmode", oldInputMode);
         voiceInputLocked = false;
-      }, delay == null ? 700 : delay);
+      }, delay == null ? 1200 : delay);
     }
 
     function updateInput() {
-      // 버튼을 누르고 말하는 동안 최종/중간 인식 내용을 입력창에 즉시 표시한다.
       var spoken = (finalText + (interimText ? (finalText ? " " : "") + interimText : "")).trim();
       input.value = ((baseText ? baseText + " " : "") + spoken).trim();
       try {
@@ -67,13 +82,15 @@
       } catch (e) {}
     }
 
-    function finish() {
+    function finalizeAndSend() {
+      if (finalized) return;
+      finalized = true;
       listening = false;
+      recognition = null;
       button.classList.remove("voice-listening");
+      setVoiceStatus("");
       var text = String(input.value || "").trim();
       if (text && longPressTriggered) {
-        // 전송 처리 내부의 input.focus()가 모바일 키보드를 띄우지 못하도록
-        // readonly/inputmode=none 잠금을 유지한 상태에서 기존 핸들러를 실행한다.
         button.__voiceProgrammaticSend = true;
         try { button.click(); } catch (e) {}
         setTimeout(function () {
@@ -81,18 +98,18 @@
           try { input.blur(); } catch (e2) {}
         }, 0);
       }
-      // touchend 뒤 합성 click 및 전송 핸들러의 지연 focus까지 지난 후 해제한다.
-      unlockInputAfterVoice(850);
+      unlockInputAfterVoice(1350);
     }
 
     function start() {
       if (!held || listening) return;
       longPressTriggered = true;
-      suppressClickUntil = Date.now() + 1200;
+      finalized = false;
+      suppressClickUntil = Date.now() + 1500;
       lockInputForVoice();
 
       if (!SpeechRecognition) {
-        toast("이 브라우저에서는 음성 인식을 지원하지 않아요.");
+        showStatus("이 브라우저에서는 음성 인식을 지원하지 않아요.");
         unlockInputAfterVoice(300);
         return;
       }
@@ -108,7 +125,7 @@
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
       } catch (e) {
-        toast("음성 인식을 시작할 수 없어요.");
+        showStatus("음성 인식을 시작할 수 없어요.");
         unlockInputAfterVoice(300);
         return;
       }
@@ -116,7 +133,7 @@
       recognition.onstart = function () {
         listening = true;
         button.classList.add("voice-listening");
-        toast("🎤 듣는 중… 손을 떼면 전송해요.");
+        setVoiceStatus("🎤 음성인식 중…");
       };
       recognition.onresult = function (event) {
         interimText = "";
@@ -132,15 +149,23 @@
       };
       recognition.onerror = function (event) {
         var code = event && event.error ? event.error : "";
-        if (code === "not-allowed" || code === "service-not-allowed") toast("마이크 권한을 허용해 주세요.");
-        else if (code === "audio-capture") toast("마이크 장치를 찾지 못했어요.");
-        else if (code !== "aborted" && code !== "no-speech") toast("음성 인식이 끊겼어요.");
+        if (code === "not-allowed" || code === "service-not-allowed") showStatus("마이크 권한을 허용해 주세요.");
+        else if (code === "audio-capture") showStatus("마이크 장치를 찾지 못했어요.");
+        else if (code !== "aborted" && code !== "no-speech") showStatus("음성 인식이 끊겼어요.");
       };
-      recognition.onend = finish;
+      recognition.onend = function () {
+        listening = false;
+        button.classList.remove("voice-listening");
+        recognition = null;
+        // 엔진 종료가 손 떼기보다 빨라도 자동 전송하지 않는다.
+        if (!held) finalizeAndSend();
+      };
 
       try { recognition.start(); }
       catch (e) {
-        toast("음성 인식을 시작하지 못했어요. HTTPS와 권한을 확인해 주세요.");
+        recognition = null;
+        setVoiceStatus("");
+        showStatus("음성 인식을 시작하지 못했어요.");
         unlockInputAfterVoice(300);
       }
     }
@@ -149,30 +174,39 @@
       if (event && event.button != null && event.button !== 0) return;
       if (held) return;
       held = true;
+      finalized = false;
       longPressTriggered = false;
       clearTimeout(holdTimer);
       holdTimer = setTimeout(start, HOLD_MS);
       try { button.setPointerCapture && event.pointerId != null && button.setPointerCapture(event.pointerId); } catch (e) {}
     }
 
-    function pressEnd() {
-      if (!held && !listening) return;
+    function pressEnd(event) {
+      if (!held && !listening && !longPressTriggered) return;
+      if (longPressTriggered && event) {
+        try { event.preventDefault(); } catch (e) {}
+        try { event.stopPropagation(); } catch (e) {}
+      }
       held = false;
       clearTimeout(holdTimer);
-      if (listening && recognition) {
-        try { recognition.stop(); } catch (e) {}
+      if (longPressTriggered) {
+        if (recognition) {
+          try { recognition.stop(); } catch (e) { finalizeAndSend(); }
+        } else {
+          finalizeAndSend();
+        }
       }
     }
 
     input.addEventListener("focus", function () {
       if (!voiceInputLocked) return;
-      // 다른 스크립트가 전송 직후 focus()를 호출해도 즉시 해제한다.
       setTimeout(function () { try { input.blur(); } catch (e) {} }, 0);
-    });
+    }, true);
 
     button.addEventListener("pointerdown", pressStart);
     button.addEventListener("pointerup", pressEnd);
     button.addEventListener("pointercancel", pressEnd);
+    button.addEventListener("contextmenu", function (e) { if (held) e.preventDefault(); });
 
     button.addEventListener("click", function (event) {
       if (button.__voiceProgrammaticSend) return;
