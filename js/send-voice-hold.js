@@ -29,10 +29,42 @@
     var baseText = "";
     var finalText = "";
     var interimText = "";
+    var inputLockTimer = null;
+    var oldReadOnly = false;
+    var oldInputMode = null;
+    var voiceInputLocked = false;
+
+    function lockInputForVoice() {
+      clearTimeout(inputLockTimer);
+      if (!voiceInputLocked) {
+        oldReadOnly = !!input.readOnly;
+        oldInputMode = input.getAttribute("inputmode");
+      }
+      voiceInputLocked = true;
+      input.readOnly = true;
+      input.setAttribute("inputmode", "none");
+      try { input.blur(); } catch (e) {}
+    }
+
+    function unlockInputAfterVoice(delay) {
+      clearTimeout(inputLockTimer);
+      inputLockTimer = setTimeout(function () {
+        try { input.blur(); } catch (e) {}
+        input.readOnly = oldReadOnly;
+        if (oldInputMode == null) input.removeAttribute("inputmode");
+        else input.setAttribute("inputmode", oldInputMode);
+        voiceInputLocked = false;
+      }, delay == null ? 700 : delay);
+    }
 
     function updateInput() {
+      // 버튼을 누르고 말하는 동안 최종/중간 인식 내용을 입력창에 즉시 표시한다.
       var spoken = (finalText + (interimText ? (finalText ? " " : "") + interimText : "")).trim();
       input.value = ((baseText ? baseText + " " : "") + spoken).trim();
+      try {
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.scrollLeft = input.scrollWidth;
+      } catch (e) {}
     }
 
     function finish() {
@@ -40,21 +72,28 @@
       button.classList.remove("voice-listening");
       var text = String(input.value || "").trim();
       if (text && longPressTriggered) {
-        // 기존 실시간-챗 전송 핸들러를 한 번만 통과시킨다.
+        // 전송 처리 내부의 input.focus()가 모바일 키보드를 띄우지 못하도록
+        // readonly/inputmode=none 잠금을 유지한 상태에서 기존 핸들러를 실행한다.
         button.__voiceProgrammaticSend = true;
         try { button.click(); } catch (e) {}
-        setTimeout(function () { button.__voiceProgrammaticSend = false; }, 0);
+        setTimeout(function () {
+          button.__voiceProgrammaticSend = false;
+          try { input.blur(); } catch (e2) {}
+        }, 0);
       }
-      try { input.focus(); } catch (e2) {}
+      // touchend 뒤 합성 click 및 전송 핸들러의 지연 focus까지 지난 후 해제한다.
+      unlockInputAfterVoice(850);
     }
 
     function start() {
       if (!held || listening) return;
       longPressTriggered = true;
-      suppressClickUntil = Date.now() + 900;
+      suppressClickUntil = Date.now() + 1200;
+      lockInputForVoice();
 
       if (!SpeechRecognition) {
         toast("이 브라우저에서는 음성 인식을 지원하지 않아요.");
+        unlockInputAfterVoice(300);
         return;
       }
 
@@ -70,6 +109,7 @@
         recognition.maxAlternatives = 1;
       } catch (e) {
         toast("음성 인식을 시작할 수 없어요.");
+        unlockInputAfterVoice(300);
         return;
       }
 
@@ -99,7 +139,10 @@
       recognition.onend = finish;
 
       try { recognition.start(); }
-      catch (e) { toast("음성 인식을 시작하지 못했어요. HTTPS와 권한을 확인해 주세요."); }
+      catch (e) {
+        toast("음성 인식을 시작하지 못했어요. HTTPS와 권한을 확인해 주세요.");
+        unlockInputAfterVoice(300);
+      }
     }
 
     function pressStart(event) {
@@ -120,6 +163,12 @@
         try { recognition.stop(); } catch (e) {}
       }
     }
+
+    input.addEventListener("focus", function () {
+      if (!voiceInputLocked) return;
+      // 다른 스크립트가 전송 직후 focus()를 호출해도 즉시 해제한다.
+      setTimeout(function () { try { input.blur(); } catch (e) {} }, 0);
+    });
 
     button.addEventListener("pointerdown", pressStart);
     button.addEventListener("pointerup", pressEnd);

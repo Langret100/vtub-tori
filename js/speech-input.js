@@ -48,6 +48,8 @@
     var pausedAlwaysListen = false;
     var inputWasReadOnly = false;
     var previousInputMode = null;
+    var keyboardGuardUntil = 0;
+    var unlockTimer = null;
 
     function lockVirtualKeyboard() {
       inputWasReadOnly = !!input.readOnly;
@@ -57,10 +59,26 @@
       input.setAttribute("inputmode", "none");
     }
 
-    function unlockVirtualKeyboard() {
+    function unlockVirtualKeyboardNow() {
+      try { input.blur(); } catch (e) {}
       input.readOnly = inputWasReadOnly;
       if (previousInputMode == null) input.removeAttribute("inputmode");
       else input.setAttribute("inputmode", previousInputMode);
+      // 일부 모바일 브라우저는 readonly 해제 직후 예약된 focus를 실행하므로 한 번 더 해제한다.
+      setTimeout(function () {
+        if (Date.now() < keyboardGuardUntil) {
+          try { input.blur(); } catch (e) {}
+        }
+      }, 0);
+    }
+
+    function unlockVirtualKeyboard(delay) {
+      clearTimeout(unlockTimer);
+      if (!delay) {
+        unlockVirtualKeyboardNow();
+        return;
+      }
+      unlockTimer = setTimeout(unlockVirtualKeyboardNow, delay);
     }
 
     function mergeText() {
@@ -83,8 +101,10 @@
           console.warn("Voice submit failed:", e);
         }
       }
-      // 음성 전송 직후 입력창에 다시 포커스를 주면 모바일 키보드가 올라오므로 복원만 한다.
-      unlockVirtualKeyboard();
+      // 전송 함수 내부의 focus()와 touchend 뒤 합성 click이 끝날 때까지 입력창을 잠근다.
+      keyboardGuardUntil = Date.now() + 1100;
+      try { input.blur(); } catch (e) {}
+      unlockVirtualKeyboard(1150);
     }
 
     function startRecognition() {
@@ -174,8 +194,13 @@
       try { button.setPointerCapture && event.pointerId != null && button.setPointerCapture(event.pointerId); } catch (e) {}
     }
 
-    function pressEnd() {
+    function pressEnd(event) {
       if (!pointerHeld && !listening) return;
+      // 길게 누른 동작의 pointerup/touchend가 일반 click·focus로 이어지지 않게 한다.
+      if (longPressTriggered && event) {
+        try { event.preventDefault(); } catch (e) {}
+        try { event.stopPropagation(); } catch (e) {}
+      }
       pointerHeld = false;
       clearTimeout(holdTimer);
       if (listening && recognition) {
@@ -185,6 +210,12 @@
         unlockVirtualKeyboard();
       }
     }
+
+    input.addEventListener("focus", function () {
+      if (Date.now() < keyboardGuardUntil) {
+        try { input.blur(); } catch (e) {}
+      }
+    }, true);
 
     button.addEventListener("pointerdown", pressStart);
     button.addEventListener("pointerup", pressEnd);
