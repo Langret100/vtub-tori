@@ -11,6 +11,8 @@
   let restarting = false;
   let stopRequested = false;
   let lastHandledAt = 0;
+  let lastHandledText = '';
+  let pausedForVoiceInput = false;
   let permissionState = "unknown";
   let overlayEl = null;
 
@@ -167,7 +169,11 @@
     if (/[?？]$/.test(raw)) return true;
     if (/(열어줘|열어 줘|켜줘|켜 줘|들어가|접속해|닫아|닫아줘|기본화면|기본 화면|도와줘|봐줘|알려줘|해줘)$/.test(raw)) return true;
     if (/(뭐해|뭐 하|어디 있|들리|말해봐|대답해|답해)/.test(raw)) return true;
-    if (raw.length <= 10) return true;
+    // 이전에는 10자를 넘는 일반 문장을 여기서 버렸기 때문에,
+    // 기기별 인식 차이처럼 보이는 누락이 발생했다. 음성엔진이 최종 문장으로
+    // 확정한 2자 이상의 발화는 기본적으로 전달하고, 호출어/명령어 판정은
+    // 빠른 처리 경로로만 사용한다.
+    if (raw.replace(/\s+/g, '').length >= 2) return true;
     return false;
   }
 
@@ -195,26 +201,37 @@
     };
     rec.onend = function(){
       recognizing = false;
-      if (!enabled || stopRequested) return;
+      // 모바일 Chrome 등은 종료된 인스턴스를 다시 start()하면 InvalidStateError가
+      // 나는 경우가 있어 다음 루프에서는 새 인스턴스를 만든다.
+      if (recognition === rec) recognition = null;
+      if (!enabled || stopRequested || pausedForVoiceInput) return;
       if (restarting) return;
       restarting = true;
       setTimeout(function(){
         restarting = false;
-        if (enabled && !recognizing && !stopRequested) {
-          try { rec.start(); } catch(e){}
+        if (enabled && !recognizing && !stopRequested && !pausedForVoiceInput) {
+          startRecognitionLoop();
         }
-      }, 500);
+      }, 350);
     };
     rec.onresult = function(event){
       if (!event || !event.results) return;
-      const result = event.results[event.results.length - 1];
-      if (!result || !result[0]) return;
-      const text = String(result[0].transcript || '').trim();
-      if (!text) return;
-      if (!shouldReact(text)) return;
+      const parts = [];
+      for (let i = event.resultIndex || 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (!result || !result.isFinal || !result[0]) continue;
+        const part = String(result[0].transcript || '').trim();
+        if (part) parts.push(part);
+      }
+      const text = parts.join(' ').trim();
+      if (!text || !shouldReact(text)) return;
       const now = Date.now();
-      if (now - lastHandledAt < 2300) return;
+      const normalizedText = normalize(text);
+      // 동일 결과의 중복 콜백만 막고, 서로 다른 연속 발화는 빠르게 처리한다.
+      if (normalizedText === lastHandledText && now - lastHandledAt < 1800) return;
+      if (now - lastHandledAt < 700) return;
       lastHandledAt = now;
+      lastHandledText = normalizedText;
 
       const wakeCommandText = stripWakeCommand(text) || text;
       const messengerOpen = !!(typeof window.isMessengerOpen === 'function' && window.isMessengerOpen());
@@ -260,11 +277,35 @@
 
   function stopInternal(){
     stopRequested = true;
-    if (recognition && recognizing) {
+    if (recognition) {
       try { recognition.stop(); } catch(e){}
+      try { recognition.abort(); } catch(e2){}
     }
+    recognition = null;
     recognizing = false;
     restarting = false;
+  }
+
+  function pauseForVoiceInput(){
+    if (!enabled) return false;
+    pausedForVoiceInput = true;
+    stopRequested = true;
+    if (recognition) {
+      try { recognition.abort(); } catch(e){}
+    }
+    recognition = null;
+    recognizing = false;
+    restarting = false;
+    return true;
+  }
+
+  function resumeAfterVoiceInput(){
+    if (!enabled || !pausedForVoiceInput) return;
+    pausedForVoiceInput = false;
+    stopRequested = false;
+    setTimeout(function(){
+      if (enabled && !recognizing && !pausedForVoiceInput) startRecognitionLoop();
+    }, 300);
   }
 
   async function enableFromUserGesture(){
@@ -321,6 +362,8 @@
     toggle: toggle,
     enable: enableFromUserGesture,
     disable: disable,
-    isEnabled: function(){ return enabled; }
+    isEnabled: function(){ return enabled; },
+    pauseForVoiceInput: pauseForVoiceInput,
+    resumeAfterVoiceInput: resumeAfterVoiceInput
   };
 })();
